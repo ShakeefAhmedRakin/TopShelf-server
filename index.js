@@ -90,6 +90,13 @@ async function run() {
       res.send(result);
     });
 
+    // BOOK GET API FOR CALL BOOKS
+    app.get("/books", async (req, res) => {
+      const cursor = bookCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     // BOOK GET API BASED ON CATEGORY
     app.get("/books/:category", async (req, res) => {
       const category = req.params.category;
@@ -131,6 +138,28 @@ async function run() {
       const details = {
         $set: {
           book_quantity: updated.book_quantity,
+        },
+      };
+
+      const result = await bookCollection.updateOne(query, details, options);
+      res.send(result);
+    });
+
+    // BOOK PUT API FOR SINGLE BOOK
+    app.put("/book-update/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedBook = req.body;
+      console.log(updatedBook);
+      const details = {
+        $set: {
+          book_name: updatedBook.book_name,
+          book_image: updatedBook.book_image,
+          book_category: updatedBook.book_category,
+          book_author: updatedBook.book_author,
+          book_rating: updatedBook.book_rating,
         },
       };
 
