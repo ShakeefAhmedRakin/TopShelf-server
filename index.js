@@ -53,6 +53,8 @@ async function run() {
       .db("TopShelfDB")
       .collection("categoryCollection");
 
+    const bookCollection = client.db("TopShelfDB").collection("bookCollection");
+
     // TOKEN AUTH API
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -74,6 +76,21 @@ async function run() {
     app.get("/categories", async (req, res) => {
       const cursor = categoryCollection.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // BOOK POST API
+    app.post("/books", async (req, res) => {
+      const newBook = req.body;
+      const result = await bookCollection.insertOne(newBook);
+      res.send(result);
+    });
+
+    // BOOK GET API BASED ON CATEGORY
+    app.get("/books/:category", async (req, res) => {
+      const category = req.params.category;
+      const query = { book_category: category };
+      const result = await bookCollection.find(query).toArray();
       res.send(result);
     });
 
