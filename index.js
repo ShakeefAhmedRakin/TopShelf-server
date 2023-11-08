@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const axios = require("axios");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -137,6 +138,49 @@ async function run() {
       res.send(result);
     });
 
+    // BOOK GET API FOR BORROWED BOOKS
+    const bookAPIURL = process.env.apiURL; // Replace with the correct URL
+
+    app.get("/borrowed/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        user_email: email,
+      };
+
+      const books = await borrowedCollection.find(query).toArray();
+
+      const result = [];
+
+      const fetchPromises = books.map(async (book) => {
+        const book_id = book.book_id;
+
+        try {
+          const response = await axios.get(`${bookAPIURL}/book/${book_id}`);
+          const bookDetails = {
+            return_date: book.return_date,
+            borrowed_date: book.borrowed_date,
+            borrowed_id: book._id,
+            ...response.data,
+          };
+
+          return bookDetails;
+        } catch (error) {
+          console.error("Error fetching product details:", error);
+          return null;
+        }
+      });
+
+      Promise.all(fetchPromises)
+        .then((data) => {
+          result.push(...data.filter((item) => item !== null));
+          res.send(result);
+        })
+        .catch((error) => {
+          console.error("Error handling fetch promises:", error);
+          res.status(500).send("Internal Server Error");
+        });
+    });
+
     // BORROWED BOOK API
     // GET API
     app.get("/borrowed", async (req, res) => {
@@ -158,6 +202,14 @@ async function run() {
         const result = await borrowedCollection.insertOne(borrowed);
         res.send(result);
       }
+    });
+
+    // DELETE API
+    app.delete("/borrowed/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await borrowedCollection.deleteOne(query);
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
