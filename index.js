@@ -54,6 +54,9 @@ async function run() {
       .collection("categoryCollection");
 
     const bookCollection = client.db("TopShelfDB").collection("bookCollection");
+    const borrowedCollection = client
+      .db("TopShelfDB")
+      .collection("borrowedCollection");
 
     // TOKEN AUTH API
     app.post("/jwt", async (req, res) => {
@@ -92,6 +95,69 @@ async function run() {
       const query = { book_category: category };
       const result = await bookCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // BOOK GET API BASED ON ID
+    app.get("/book/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+
+        if (!ObjectId.isValid(id)) {
+          res.status(400).send({ error: "Invalid product ID" });
+          return;
+        }
+
+        const query = { _id: new ObjectId(id) };
+        const result = await bookCollection.findOne(query);
+
+        if (!result) {
+          res.status(404).send({ error: "Book not found" });
+          return;
+        }
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Internal server error" });
+      }
+    });
+
+    // BOOK PUT API FOR QUANTITY UPDATE
+    app.put("/book/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updated = req.body;
+      const details = {
+        $set: {
+          book_quantity: updated.book_quantity,
+        },
+      };
+
+      const result = await bookCollection.updateOne(query, details, options);
+      res.send(result);
+    });
+
+    // BORROWED BOOK API
+    // GET API
+    app.get("/borrowed", async (req, res) => {
+      const cursor = borrowedCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // POST API
+    app.post("/borrowed", async (req, res) => {
+      const borrowed = req.body;
+      const { email, book_id } = borrowed;
+
+      const existing = await borrowedCollection.findOne({ email, book_id });
+
+      if (existing) {
+        res.status(400).json({ error: "Book Already Borrowed." });
+      } else {
+        const result = await borrowedCollection.insertOne(borrowed);
+        res.send(result);
+      }
     });
 
     await client.db("admin").command({ ping: 1 });
