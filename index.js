@@ -83,7 +83,13 @@ async function run() {
     app.post("/logout", async (req, res) => {
       const user = req.body;
       console.log("Logging Out", user);
-      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+      res
+        .clearCookie("token", {
+          maxAge: 0,
+          secure: process.env.NODE_ENV === "production" ? true : false,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
     });
 
     // CATEGORY API
