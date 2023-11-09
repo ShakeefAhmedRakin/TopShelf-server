@@ -76,6 +76,12 @@ async function run() {
         .send({ success: true });
     });
 
+    app.post("/logout", async (req, res) => {
+      const user = req.body;
+      console.log("Logging Out", user);
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    });
+
     // CATEGORY API
     app.get("/categories", async (req, res) => {
       const cursor = categoryCollection.find();
