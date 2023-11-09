@@ -11,7 +11,11 @@ const port = process.env.PORT || 5000;
 // MIDDLEWARE
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      // "http://localhost:5173",
+      "https://topshelf-79995.web.app",
+      "https://topshelf-79995.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
