@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) {
-    return res.status(401).send({ message: "Forbidden" });
+    return res.status(401).send({ message: "Unauthorized Access" });
   }
   jwt.verify(token, process.env.ACCESS_TOKEN, (error, decoded) => {
     if (error) {
@@ -70,7 +70,7 @@ async function run() {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: process.env.NODE_ENV === "production" ? true : false,
           sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
@@ -84,14 +84,14 @@ async function run() {
     });
 
     // BOOK POST API
-    app.post("/books", async (req, res) => {
+    app.post("/books", verifyToken, async (req, res) => {
       const newBook = req.body;
       const result = await bookCollection.insertOne(newBook);
       res.send(result);
     });
 
     // BOOK GET API FOR CALL BOOKS
-    app.get("/books", async (req, res) => {
+    app.get("/books", verifyToken, async (req, res) => {
       const cursor = bookCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -146,7 +146,7 @@ async function run() {
     });
 
     // BOOK PUT API FOR SINGLE BOOK
-    app.put("/book-update/:id", async (req, res) => {
+    app.put("/book-update/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
 
       const query = { _id: new ObjectId(id) };
@@ -221,10 +221,14 @@ async function run() {
     // POST API
     app.post("/borrowed", async (req, res) => {
       const borrowed = req.body;
-      const { email, book_id } = borrowed;
+      const { user_email, book_id } = borrowed;
 
-      const existing = await borrowedCollection.findOne({ email, book_id });
+      const existing = await borrowedCollection.findOne({
+        user_email,
+        book_id,
+      });
 
+      console.log(existing);
       if (existing) {
         res.status(400).json({ error: "Book Already Borrowed." });
       } else {
